@@ -2,9 +2,9 @@
 -- Using % && CASE Statements in place of MOD() && IF logic
 -- ... likely most compatible across DBMS ??
 --
-DROP PROCEDURE IF EXISTS SupportServices.ticket_activity_case;
+DROP PROCEDURE IF EXISTS SupportServices.ticket_activity_case_v2;
 DELIMITER $$
-CREATE PROCEDURE SupportServices.ticket_activity_case(IN tix_num INT)
+CREATE PROCEDURE SupportServices.ticket_activity_case_v2(IN tix_num INT)
 BEGIN
     WITH ticket_activity_view_init AS (
         SELECT ticketnum
@@ -88,7 +88,19 @@ BEGIN
     SELECT t1.rnk
          , t1.commenttext
          , t1.timestamp
-         , TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1)) elapsed
+#          , TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1)) elapsed
+         , CASE
+                 WHEN EXTRACT(HOUR_MINUTE FROM TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))) > '2359'
+                     THEN CONCAT(
+                         @days := FLOOR(HOUR(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))) / 24)
+                         , IF(@days > 1, ' days, ', ' day, ')
+                         , LPAD(HOUR(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))) % 24,2,'0')
+                         , ':'
+                         , LPAD(MINUTE(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))),2,0)
+                         , ':'
+                         , LPAD(SECOND(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))),2,'0'))
+                 ELSE DATE_FORMAT(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1)),'%H:%i:%s')
+             END elapsed
          , t1.elapsed_total
     FROM ticket_activity_view_ranked t1
     ORDER BY timestamp;
@@ -188,7 +200,8 @@ SET @tix_num = 2;
 CALL SupportServices.ticket_activity_case(@tix_num);
 SET @tix_num = 31;
 CALL SupportServices.ticket_activity_if(@tix_num);
-
+SET @tix_num = 2;
+CALL SupportServices.ticket_activity_case_v2(@tix_num);
 
 -- 
 -- xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -210,25 +223,25 @@ DELIMITER $$
 
 CREATE
     DEFINER=`student`@`localhost`
-    FUNCTION SupportServices.FormatTime(time_in_future DATETIME, time_in_past DATETIME)
-    RETURNS VARCHAR(25) CHARSET utf8mb4
+    FUNCTION SupportServices.FormatTime(time_in DATETIME)
+    RETURNS varchar(25) CHARSET utf8mb4
     DETERMINISTIC
 BEGIN
     DECLARE elapsed_total VARCHAR(25);
     DECLARE days INT;
-    SET days = FLOOR(HOUR(TIMEDIFF(time_in_future, time_in_past)) / 24);
+    SET days = FLOOR(HOUR(time_in) / 24);
 
-    IF EXTRACT(HOUR_MINUTE FROM TIMEDIFF(time_in_future, time_in_past)) > '2359'
+    IF EXTRACT(HOUR_MINUTE FROM time_in) > '2359'
         THEN SET elapsed_total =
         CONCAT(
           days
           ,IF(days > 1, ' days, ', ' day, ')
-          ,LPAD(HOUR(TIMEDIFF(time_in_future, time_in_past)) % 24,2,'0')
+          ,LPAD(HOUR(time_in) % 24,2,'0')
           ,':'
-          ,LPAD(MINUTE(TIMEDIFF(time_in_future, time_in_past)),2,'0')
+          ,LPAD(MINUTE(time_in),2,'0')
           ,':'
-          ,LPAD(SECOND(TIMEDIFF(time_in_future, time_in_past)),2,'0'));
-    ELSE SET elapsed_total = DATE_FORMAT(TIMEDIFF(time_in_future, time_in_past),'%H:%i:%s');
+          ,LPAD(SECOND(time_in),2,'0'));
+    ELSE SET elapsed_total = DATE_FORMAT(time_in,'%H:%i:%s');
     END IF;
     RETURN (elapsed_total);
 END $$
