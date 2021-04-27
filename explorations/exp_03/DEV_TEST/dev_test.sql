@@ -208,15 +208,21 @@ CALL SupportServices.ticket_activity_if(@tix_num);
 
 DELIMITER $$
 
-CREATE DEFINER=`student`@`localhost` FUNCTION `FormatElapsedTime`(time_in_future DATETIME, time_in_past DATETIME) RETURNS varchar(25) CHARSET utf8mb4
+CREATE
+    DEFINER=`student`@`localhost`
+    FUNCTION SupportServices.FormatTime(time_in_future DATETIME, time_in_past DATETIME)
+    RETURNS VARCHAR(25) CHARSET utf8mb4
     DETERMINISTIC
 BEGIN
     DECLARE elapsed_total VARCHAR(25);
+    DECLARE days INT;
+    SET days = FLOOR(HOUR(TIMEDIFF(time_in_future, time_in_past)) / 24);
+
     IF EXTRACT(HOUR_MINUTE FROM TIMEDIFF(time_in_future, time_in_past)) > '2359'
         THEN SET elapsed_total =
         CONCAT(
-          @days := FLOOR(HOUR(TIMEDIFF(time_in_future, time_in_past)) / 24)
-          ,IF(@days > 1, ' days, ', ' day, ')
+          days
+          ,IF(days > 1, ' days, ', ' day, ')
           ,LPAD(HOUR(TIMEDIFF(time_in_future, time_in_past)) % 24,2,'0')
           ,':'
           ,LPAD(MINUTE(TIMEDIFF(time_in_future, time_in_past)),2,'0')
