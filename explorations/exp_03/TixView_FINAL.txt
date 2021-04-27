@@ -121,10 +121,21 @@ BEGIN
              , elapsed_total
         FROM ticket_activity_view_compiled
     )
-    SELECT t1.rnk
-         , t1.commenttext
+    SELECT -- t1.rnk,
+           t1.commenttext
          , t1.timestamp
-         , TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1)) elapsed
+         , CASE
+                 WHEN EXTRACT(HOUR_MINUTE FROM TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))) > '2359'
+                     THEN CONCAT(
+                         @days := FLOOR(HOUR(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))) / 24)
+                         , IF(@days > 1, ' days, ', ' day, ')
+                         , LPAD(HOUR(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))) % 24,2,'0')
+                         , ':'
+                         , LPAD(MINUTE(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))),2,0)
+                         , ':'
+                         , LPAD(SECOND(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))),2,'0'))
+                 ELSE DATE_FORMAT(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1)),'%H:%i:%s')
+             END elapsed
          , t1.elapsed_total
     FROM ticket_activity_view_ranked t1
     ORDER BY timestamp;
@@ -140,21 +151,21 @@ CALL SupportServices.ticket_activity(@tix_num);
 
 OUTPUT [@tix_num = 2]:
 
-+---+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------+---------+-----------------+
-|rnk|commenttext                                                                                                                                                                                                                                                 |timestamp          |elapsed  |elapsed_total    |
-+---+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------+---------+-----------------+
-|1  |Ticket[2] Opened By: <rep>                                                                                                                                                                                                                                  |2015-04-16 16:16:59|NULL     |NULL             |
-|1  |Ticket[2] Assigned To: <rep>                                                                                                                                                                                                                                |2015-04-16 16:16:59|NULL     |00:00:00         |
-|2  |<rep>: Unable to reproduce issue. Requested screenshot from customer.                                                                                                                                                                                       |2015-04-17 08:09:21|15:52:22 |15:52:22         |
-|3  |<rep>: Customer screenshot shows at least 24 drives being monitored. Verified that report does indeed cut off additional drives in test environment. Adjusting screen resolution only allows about one additional line to diplay. Request escalation to Dev.|2015-04-18 13:06:42|28:57:21 |1 day, 20:49:43  |
-|4  |Ticket[2] Assigned To: <rep>                                                                                                                                                                                                                                |2015-04-18 13:15:10|00:08:28 |1 day, 20:58:11  |
-|5  |<rep>: Confirmed issue as noted. Escalating.                                                                                                                                                                                                                |2015-04-18 13:23:09|00:07:59 |1 day, 21:06:10  |
-|6  |Ticket[2] Assigned To: <rep>                                                                                                                                                                                                                                |2015-04-18 16:16:22|02:53:13 |1 day, 23:59:23  |
-|7  |<rep>: Pulled source code and noted that overview report has a fixed height. Monitoring too many reports causes list to excede this height. Is fixed height needed, or can this be changed?                                                                 |2015-04-18 16:55:09|00:38:47 |2 days, 00:38:10 |
-|8  |Ticket[2] Assigned To: <rep>                                                                                                                                                                                                                                |2015-04-19 09:07:38|16:12:29 |2 days, 16:50:39 |
-|9  |<rep>: Patch 1.4235 does the fix to this. Please have the customer perform the needful.                                                                                                                                                                     |2015-05-12 10:42:14|553:34:36|25 days, 18:25:15|
-|10 |Ticket[2] Closed By: <rep>                                                                                                                                                                                                                                  |2015-05-12 11:49:22|01:07:08 |25 days, 19:32:23|
-+---+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------+---------+-----------------+
++------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------+-----------------+-----------------+
+|commenttext                                                                                                                                                                                                                                                 |timestamp          |elapsed          |elapsed_total    |
++------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------+-----------------+-----------------+
+|Ticket[2] Opened By: <rep>                                                                                                                                                                                                                                  |2015-04-16 16:16:59|NULL             |NULL             |
+|Ticket[2] Assigned To: <rep>                                                                                                                                                                                                                                |2015-04-16 16:16:59|NULL             |00:00:00         |
+|<rep>: Unable to reproduce issue. Requested screenshot from customer.                                                                                                                                                                                       |2015-04-17 08:09:21|15:52:22         |15:52:22         |
+|<rep>: Customer screenshot shows at least 24 drives being monitored. Verified that report does indeed cut off additional drives in test environment. Adjusting screen resolution only allows about one additional line to diplay. Request escalation to Dev.|2015-04-18 13:06:42|1 day, 04:57:21  |1 day, 20:49:43  |
+|Ticket[2] Assigned To: <rep>                                                                                                                                                                                                                                |2015-04-18 13:15:10|00:08:28         |1 day, 20:58:11  |
+|<rep>: Confirmed issue as noted. Escalating.                                                                                                                                                                                                                |2015-04-18 13:23:09|00:07:59         |1 day, 21:06:10  |
+|Ticket[2] Assigned To: <rep>                                                                                                                                                                                                                                |2015-04-18 16:16:22|02:53:13         |1 day, 23:59:23  |
+|<rep>: Pulled source code and noted that overview report has a fixed height. Monitoring too many reports causes list to excede this height. Is fixed height needed, or can this be changed?                                                                 |2015-04-18 16:55:09|00:38:47         |2 days, 00:38:10 |
+|Ticket[2] Assigned To: <rep>                                                                                                                                                                                                                                |2015-04-19 09:07:38|16:12:29         |2 days, 16:50:39 |
+|<rep>: Patch 1.4235 does the fix to this. Please have the customer perform the needful.                                                                                                                                                                     |2015-05-12 10:42:14|23 days, 01:34:36|25 days, 18:25:15|
+|Ticket[2] Closed By: <rep>                                                                                                                                                                                                                                  |2015-05-12 11:49:22|01:07:08         |25 days, 19:32:23|
++------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-------------------+-----------------+-----------------+
 
 
 [4] ---------------------------------------------------------------------------

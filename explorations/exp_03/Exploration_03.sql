@@ -93,10 +93,21 @@ BEGIN
              , elapsed_total
         FROM ticket_activity_view_compiled
     )
-    SELECT t1.rnk
-         , t1.commenttext
+    SELECT -- t1.rnk,
+           t1.commenttext
          , t1.timestamp
-         , TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1)) elapsed
+         , CASE
+                 WHEN EXTRACT(HOUR_MINUTE FROM TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))) > '2359'
+                     THEN CONCAT(
+                         @days := FLOOR(HOUR(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))) / 24)
+                         , IF(@days > 1, ' days, ', ' day, ')
+                         , LPAD(HOUR(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))) % 24,2,'0')
+                         , ':'
+                         , LPAD(MINUTE(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))),2,0)
+                         , ':'
+                         , LPAD(SECOND(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1))),2,'0'))
+                 ELSE DATE_FORMAT(TIMEDIFF(timestamp, (SELECT timestamp FROM ticket_activity_view_ranked t2 WHERE t2.rnk = t1.rnk-1 LIMIT 1)),'%H:%i:%s')
+             END elapsed
          , t1.elapsed_total
     FROM ticket_activity_view_ranked t1
     ORDER BY timestamp;
