@@ -208,7 +208,7 @@ CALL SupportServices.ticket_activity_if(@tix_num);
 
 DELIMITER $$
 
-CREATE DEFINER=`student`@`localhost` FUNCTION `CorrectNameCaps`(time_in_future DATETIME, time_in_past DATETIME) RETURNS varchar(25) CHARSET utf8mb4
+CREATE DEFINER=`student`@`localhost` FUNCTION `FormatElapsedTime`(time_in_future DATETIME, time_in_past DATETIME) RETURNS varchar(25) CHARSET utf8mb4
     DETERMINISTIC
 BEGIN
     DECLARE elapsed_total VARCHAR(25);
