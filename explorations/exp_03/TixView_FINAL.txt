@@ -35,7 +35,7 @@ DBMS: MySQL 8.0.22
 [3] ---------------------------------------------------------------------------
 
 -- ****************************************************************************
--- BEGIN FINAL QUERY (buggy col removed -> see dev file for buggy inclusive)
+-- BEGIN FINAL QUERY
 --
 
 DROP PROCEDURE IF EXISTS SupportServices.ticket_activity;
