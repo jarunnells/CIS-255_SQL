@@ -64,8 +64,8 @@ INSERT INTO Exploration_Scenario_04.DateRange SELECT '2021-01-01', '2022-12-31';
 -- INSERT INTO Exploration_Scenario_04.DateRange SELECT '1970-01-01', '2038-01-19';  -- !Y2K38! => 1901-12-13 20:45:52 UTC
 --
 -- DATE DIM -> INIT
-DROP TABLE IF EXISTS Exploration_Scenario_04.DateLookupTable_CTE;
-CREATE TABLE IF NOT EXISTS Exploration_Scenario_04.DateLookupTable_CTE (
+DROP TABLE IF EXISTS Exploration_Scenario_04.DateLookupTable;
+CREATE TABLE IF NOT EXISTS Exploration_Scenario_04.DateLookupTable (
     `dateID` BIGINT AUTO_INCREMENT,        -- [01]
     `date` DATE NOT NULL,                  -- [02]
     `month_weekday_int` TINYINT NOT NULL,  -- [03]
@@ -87,14 +87,14 @@ CREATE TABLE IF NOT EXISTS Exploration_Scenario_04.DateLookupTable_CTE (
 ) ENGINE=INNODB;
 --
 -- HOLIDAY DIM -> INIT
-DROP TABLE IF EXISTS Exploration_Scenario_04.HolidayLookupTable_CTE;
-CREATE TABLE IF NOT EXISTS Exploration_Scenario_04.HolidayLookupTable_CTE (
+DROP TABLE IF EXISTS Exploration_Scenario_04.HolidayLookupTable;
+CREATE TABLE IF NOT EXISTS Exploration_Scenario_04.HolidayLookupTable (
     `holidayID` BIGINT AUTO_INCREMENT,  -- [01]
     `date` DATE NOT NULL,               -- [02]
     `holiday` VARCHAR(50) NOT NULL,     -- [03]
     CONSTRAINT fk_date
         FOREIGN KEY (`date`)
-        REFERENCES Exploration_Scenario_04.DateLookupTable_CTE(`date`),
+        REFERENCES Exploration_Scenario_04.DateLookupTable(`date`),
     PRIMARY KEY (`holidayID`),
     INDEX (`date`)
 ) ENGINE=INNODB;
@@ -109,7 +109,7 @@ SET @endDate = (SELECT `dateMAX` FROM Exploration_Scenario_04.DateRange);
 SET @@cte_max_recursion_depth = IF(DATEDIFF(@endDate,@startDate)>1000, 25000, 1000);
 --
 -- COMPILE DATE DIMENSION
-INSERT INTO Exploration_Scenario_04.DateLookupTable_CTE (
+INSERT INTO Exploration_Scenario_04.DateLookupTable (
     `dateID`,             -- [01::dateID->BIGINT]
     `date`,               -- [02::date->DATE]
     `month_weekday_int`,  -- [03::month_weekday_int->TINYINT (day of week month (1-28[-31])]
@@ -168,7 +168,7 @@ date_dim AS (
 ) SELECT * FROM date_dim;
 --
 -- COMPILE HOLIDAY DIMENSION
-INSERT INTO Exploration_Scenario_04.HolidayLookupTable_CTE(
+INSERT INTO Exploration_Scenario_04.HolidayLookupTable(
     `holidayID`,  -- [01::dateID->BIGINT]
     `date`,       -- [02::date->DATE]
     `holiday`     -- [03::holiday->VARCHAR(50)]
@@ -189,7 +189,7 @@ WITH holiday_init AS (
                PARTITION BY `month_firstOf`, `week_weekday_int`
                ORDER BY `date` DESC
            ) AS `month_weekday_last`
-    FROM Exploration_Scenario_04.DateLookupTable_CTE
+    FROM Exploration_Scenario_04.DateLookupTable
 ),
 holidays_compiled AS (
     SELECT NULL,
@@ -259,16 +259,16 @@ WHERE `holiday` = 'Thanksgiving Day'
 ORDER BY `date`;
 --
 -- VERIFY DATE && HOLIDAY DIMENSIONS
-SELECT * FROM Exploration_Scenario_04.DateLookupTable_CTE ORDER BY `date`;
-SELECT * FROM Exploration_Scenario_04.HolidayLookupTable_CTE ORDER BY `date`;
+SELECT * FROM Exploration_Scenario_04.DateLookupTable ORDER BY `date`;
+SELECT * FROM Exploration_Scenario_04.HolidayLookupTable ORDER BY `date`;
 --
 -- VIEW :: DATE DIMENSION => WITH HOLIDAYS
 CREATE OR REPLACE VIEW Exploration_Scenario_04.DateDimHolidays AS
     SELECT dlt.*,
            IF(hlt.`date` IS NOT NULL, 1, 0) AS `isHoliday`,
            hlt.`holiday`
-    FROM Exploration_Scenario_04.DateLookupTable_CTE AS dlt
-    LEFT OUTER JOIN Exploration_Scenario_04.HolidayLookupTable_CTE AS hlt USING (`date`);
+    FROM Exploration_Scenario_04.DateLookupTable AS dlt
+    LEFT OUTER JOIN Exploration_Scenario_04.HolidayLookupTable AS hlt USING (`date`);
 SELECT * FROM Exploration_Scenario_04.DateDimHolidays ORDER BY `date`;
 --
 -- ****************************************************************************
