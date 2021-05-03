@@ -251,8 +251,8 @@ WHERE `holiday` = 'Thanksgiving Day'
 ORDER BY `date`;
 --
 -- VERIFY DATE && HOLIDAY DIMENSIONS
-SELECT * FROM Exploration_Scenario_04.DateLookupTable ORDER BY `date`;
-SELECT * FROM Exploration_Scenario_04.HolidayLookupTable ORDER BY `date`;
+-- SELECT * FROM Exploration_Scenario_04.DateLookupTable ORDER BY `date`;
+-- SELECT * FROM Exploration_Scenario_04.HolidayLookupTable ORDER BY `date`;
 --
 -- VIEW :: DATE DIMENSION => WITH HOLIDAYS
 CREATE OR REPLACE VIEW Exploration_Scenario_04.DateDimHolidays AS
