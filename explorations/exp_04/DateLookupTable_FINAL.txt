@@ -13,13 +13,25 @@ DBMS: MySQL 8.0.22
 [2] ---------------------------------------------------------------------------
 
 [A] Approach...
-    My approach ...
+    Initially, it didn't take me much time at all to get a Dimension set up (as
+    sampled within the dev_test.sql file) using a procedure and the many built-
+    ins. The built-in time|date functions in MySQL made this super easy to
+    implement. I had to add some challenge to it...Implement Recursive CTE, no
+    loops or traditional counters, and integrate holidays.
 
 [B] Why...
-    I decided ...
+    Why not spend four days researching and implementing Easter? I had no idea
+    what I was getting myself into or how complicated Easter would become. Many
+    of the other holidays were rather simple to implement. I do have a small bug
+    with Mother's Day 2022, but that might fix with a switch to a PARTITION?
 
 [C] Unforeseen...
-    With the ...
+    The Date Dimension, as I have set it up, is heavily reliant upon MySql 8.0+
+    which likely requires some modification to use within other DBMS (not knowing
+    full compatibility of time|date built-in functions. All compatibility issues
+    aside, this approach should work well for most modern && updated DBMS. Worst
+    case, some of the function calls would require a PARTITION or other clever
+    implementations.
 
 
 [3] ---------------------------------------------------------------------------
@@ -32,7 +44,8 @@ DBMS: MySQL 8.0.22
 -- END FINAL QUERY
 -- ****************************************************************************
 
-OUTPUT:
+OUTPUT[LIMIT 10]:
+
 
 
 [4] ---------------------------------------------------------------------------

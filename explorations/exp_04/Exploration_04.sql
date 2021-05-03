@@ -47,7 +47,7 @@ DELIMITER ;
 --
 -- EasterSunday() -> dev test
 -- 2022 bug ... ?!?!? -> switch to PARTITION BY 'sunday'
-SELECT Exploration_Scenario_04.EasterSunday('2021');
+-- SELECT Exploration_Scenario_04.EasterSunday('2021');
 --
 --
 -- BEGIN SETUP INIT
