@@ -37,8 +37,7 @@ END $$
 DELIMITER ;
 --
 -- EasterSunday() -> dev test
--- 2022 bug ... ?!?!? -> switch to PARTITION BY 'sunday'
-SELECT Exploration_Scenario_04.EasterSunday('2021');
+SELECT Exploration_Scenario_04.EasterSunday('2022');
 --
 -- BEGIN SETUP INIT
 -- *************************************************************
@@ -196,7 +195,7 @@ holidays_compiled AS (
                WHEN (`month_int` = 5 AND `month_weekday_last` = 1 AND `week_weekday_int` = 2)
                    THEN 'Memorial Day'
                WHEN (`month_int` = 5 AND (WEEK(`date`) - WEEK(`month_firstOf`)) = 2 AND `week_weekday_int` = 1)
-                   THEN 'Mother''s Day'
+                   THEN 'Mother''s Day'  -- 2022 bug ... ?!?!? -> switch to PARTITION BY 'sunday'
                WHEN (`month_int` = 6 AND (WEEK(`date`) - WEEK(`month_firstOf`)) = 3 AND `week_weekday_int` = 1)
                    THEN 'Father''s Day'
                WHEN (`month_int` = 7 AND `month_weekday_int` = 4)
